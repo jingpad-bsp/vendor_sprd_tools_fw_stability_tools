@@ -1,0 +1,608 @@
+#!/bin/sh
+
+#define folder:
+folder="./scene_log_01"
+#inptFolder="./inputLog"
+stackFolder="./dzt_stack"
+scapFolder="./screenshot"
+sfTraceFolder="./surfaceflinger"
+hproFolder="./hprofs"
+dpboxFolder="./dropbox"
+dpboxDir="/data/system/dropbox"
+corefileDir="/data/corefile/"
+tombsDir="/data/tombstones/"
+propDir="/data/property/"
+core2Folder="./core2Folder"
+tombsFolder="./tombstone"
+binderFolder="./binder"
+systemserverFolder="./systemserver"
+tracesFolder="./traces"
+bootanimFolder="./bootanim"
+
+#define files:
+topFile="top.txt"
+bootanimFile=$bootanimFolder"/bootanim.txt"
+sfTraceFile=$sfTraceFolder"/stacktrace.txt"
+sFlingerFile=$sfTraceFolder"/dumpsys.txt"
+surflgerFdsFile=$sfTraceFolder"/fd.txt"
+transLogFile=$binderFolder"/transactions_log.txt"
+transFile=$binderFolder"/transactions.txt"
+transFailFile=$binderFolder"/transactions_fail.txt"
+psFile="ps.txt"
+sysrqFile="/proc/sysrq-trigger"
+systemFdsFile=$systemserverFolder"/fd.txt"
+systemMapsFile=$systemserverFolder"/maps.txt"
+scapBeforeFile=$scapFolder"/scrcap_before.png"
+scapAfterFile=$scapFolder"/scrcap_after.png"
+stackFiles=$stackFolder"/dzt_pids.txt"
+traceFile="/data/anr/traces.txt"
+preTraceFile="/data/anr/traces_old.txt"
+bugReportFile="bugreport.txt"
+devInfoFile="deviceinfo.txt"
+dfFile="df.txt"
+dumpWindFile="dumpsys_window.txt"
+dumpActivitysFile="dumpsys_activitys.txt"
+memFile="meminfo.txt"
+othersFile="others.txt"
+toolFile="toollog.txt"
+#logcatFile="logcat.txt"
+#kmsgFile="kmsg.txt"
+#geteventFile="getevent.txt"
+#kInptFile=$inptFolder"/kInptLog.txt"
+#fwInptFile=$inptFolder"/fwInptLog.txt"
+#gEventFile="/getevent.txt"
+
+#var define:
+ver456="4 5 6"
+ver7="7"
+ver8="8"
+ver9="9"
+ver10="10"
+
+#0. check device:
+rm -rf $toolFile
+echo "Log Catch Script Start Time - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+echo "Log Catch Script : devicehung_logcat_unix" >>$toolFile
+
+echo "step0 check device begin">>$toolFile
+sleep 2
+#adb remount
+echo "step0 check device end">>$toolFile
+
+#1.create folders:
+echo -e "\nCreate local log folder:"
+
+#create log folder:
+if [ ! -d "$folder" ]; then
+  echo "mkdir SceneLog Folder" >>$toolFile
+  mkdir "$folder"
+else
+  echo "rm SceneLog Folder" >>$toolFile
+  rm -rf $folder/*
+fi
+mv $toolFile $folder
+cd "$folder"
+
+echo -e "\nstep1 create folders begin">>$toolFile
+#create bootanim folder:
+echo "step1 Bootanim folder begin" >>$toolFile
+if [ ! -d "$bootanimFolder" ]; then
+  echo "mkdir Bootanim Folder" >>$toolFile
+  mkdir -p "$bootanimFolder"
+fi
+echo "step1 Bootanim folder end" >>$toolFile
+
+#create stack floder"
+echo "step1 ProStack folder begin" >>$toolFile
+if [ ! -d "$stackFolder" ]; then
+  echo "mkdir ProStack Folder" >>$toolFile
+  mkdir -p "$stackFolder"
+fi
+echo "step1 ProStack folder end" >>$toolFile
+
+#create scrcap folder:
+echo "step1 Screencap folder begin" >>$toolFile
+if [ ! -d "$scapFolder" ]; then
+  echo "mkdir Screencap Folder" >>$toolFile
+  mkdir -p "$scapFolder"
+fi
+echo "step1 Screencap folder end" >>$toolFile
+
+#create sf trace:
+echo "step1 Sftrace folder begin" >>$toolFile
+if [ ! -d "$sfTraceFolder" ]; then
+  echo "mkdir Sftrace Folder" >>$toolFile
+  mkdir -p "$sfTraceFolder"
+fi
+echo "step1 Sftrace folder end" >>$toolFile
+
+#create dropbox folder:
+echo "step1 Dropbox folder begin" >>$toolFile
+if [ ! -d "$dpboxFolder" ]; then
+  echo "mkdir Dropbox Folder" >>$toolFile
+  mkdir -p "$dpboxFolder"
+fi
+echo "step1 Dropbox folder end" >>$toolFile
+
+#create hprofs folder:
+echo "step1 Hprofs folder begin" >>$toolFile
+if [ ! -d "$hproFolder" ]; then
+  echo "mkdir Hprofs Folder" >>$toolFile
+  mkdir -p "$hproFolder"
+fi
+echo "step1 Hprofs folder end" >>$toolFile
+
+#create tombsFolder folder:
+echo "step1 Tombstones folder begin" >>$toolFile
+if [ ! -d "$tombsFolder" ]; then
+  echo "mkdir Tombstones Folder" >>$toolFile
+  mkdir -p "$tombsFolder"
+fi
+echo "step1 Tombstones folder end" >>$toolFile
+
+#creat binder folder:
+echo "step1 Binder folder begin" >>$toolFile
+if [ ! -d "$binderFolder" ]; then
+  echo "mkdir binder Folder" >>$toolFile
+  mkdir -p "$binderFolder"
+fi
+echo "step1 Binder folder end" >>$toolFile
+
+#creat Systemserver folder:
+echo "step1 Systemserver folder begin" >>$toolFile
+if [ ! -d "$systemserverFolder" ]; then
+  echo "mkdir Systemserver Folder" >>$toolFile
+  mkdir -p "$systemserverFolder"
+fi
+echo "step1 Systemserver folder end" >>$toolFile
+
+#creat traces folder:
+echo "step1 Traces folder begin" >>$toolFile
+if [ ! -d "$tracesFolder" ]; then
+  echo "mkdir Traces Folder" >>$toolFile
+  mkdir -p "$tracesFolder"
+fi
+echo "step1 Traces folder end" >>$toolFile
+
+echo "step1 create folders end" >>$toolFile
+
+#define funcs:
+function getDropboxFiles()
+{
+  #for file in ` ls $dpboxDir |egrep "watchdog|crash"`
+  echo "getDropboxFiles" >>$toolFile
+  chmod 777 $dpboxDir/*
+  for file in ` ls $dpboxDir `
+  do
+    #if [ -f "$file" ]; then
+      cp $dpboxDir"/"$file $dpboxFolder 1>/dev/null &
+    #fi
+  done
+}
+
+function Assert()
+{
+   #getSystemServerInfo
+   cat /data/sprdinfo/apr.xml | grep "assert" -i
+}
+
+function killMonkey()
+{
+	echo " - Obtain monkey pid..." >>$toolFile
+	lastMonkeyPid=`ps | grep 'monkey' | busybox awk '{print $2}'`
+	if [ "$lastMonkeyPid" ]; then
+		echo " - ps lastMonkeyPid: "$lastMonkeyPid >>$toolFile
+		kill -3 $lastMonkeyPid
+		echo " - ps killMonkey Success!" >>$toolFile
+		#exit 1
+	else
+		lastMonkeyPid=`ps -A | grep 'monkey' | busybox awk '{print $2}'`
+		if [ "$lastMonkeyPid" ]; then
+			echo " - ps -A lastMonkeyPid: "$lastMonkeyPid >>$toolFile
+			kill -3 $lastMonkeyPid
+			echo " - ps -A killMonkey Success!" >>$toolFile
+			#exit 1
+		else
+			echo " - Monkey pid is not exist!" >>$toolFile
+		fi
+	fi
+}
+
+function execCmdTimeout()
+{
+        echo "execCmdTimeout" >>$toolFile
+        waitfor=4
+        cmdPid=$!
+        echo "execCmdTimeout,cmdPid : $cmdPid" >>$toolFile
+        ( sleep $waitfor ; kill -9 $cmdPid  > /dev/null 2>&1) &
+        bgSlKilPid=$!
+        echo "execCmdTimeout,bgSlKilPid : $bgSlKilPid" >>$toolFile
+        wait $cmdPid > /dev/null 2>&1
+        #(pPid=$PPID; echo "\n pPid : $pPid"; kill -9 $pPid > /dev/null 2>&1) #the devicehung_logcat script PID.
+}
+
+#2.device info: ro.bootimage.build.fingerprint | ro.build.version.release :
+echo -e "\nstep2 get device info begin - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+echo -e "\nDeviceinfo:" >>$devInfoFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` [serialno]=` getprop ro.serialno`" >>$devInfoFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` [build.description]=` getprop ro.build.description`" >>$devInfoFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` [build.version.release]=` getprop ro.build.version.release`" >>$devInfoFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` [init.svc.bootanim]=` getprop init.svc.bootanim`" >>$devInfoFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` [service.bootanim.exit]=` getprop service.bootanim.exit`" >>$devInfoFile
+
+#verFlag=` getprop ro.build.description`  ||  $(expr index $verFlag '.') || expr substr "$str" 1 3
+verFlag=` getprop ro.build.version.release`
+substr=${verFlag:0:1}
+echo -e "verFlag is = $verFlag" >>$toolFile
+echo -e "step2 The Substr of Version is $substr" >>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "Version is <=7" >>$toolFile
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version is $verFlag" >>$toolFile
+else
+  echo -e "\nUnknown Version"
+fi
+
+#adb -s devices1 shell | adb -s devices1 cmd
+echo "step2 get device info end - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+
+#2.1get bootanim PID:
+echo -e "\nstep2.1 Bootanim info begin - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+banmRFlag=` getprop init.svc.bootanim`
+echo -e "step2.1 The Substr of Version is $substr" >>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "Version <=7 PS |grep bootanim" >>$toolFile
+   bootanimPid=` ps |grep bootanim | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep bootanim" >>$toolFile
+   bootanimPid=` ps -A|grep bootanim | busybox awk '{print $2}'`
+else
+   echo -e "\nUnknown PS |grep bootanim"
+fi
+
+echo -e "Bootanim Pid is $bootanimPid" >>$toolFile
+#if [[ -z "$bootanimPid" ]]; then
+if [ "$bootanimPid" ]; then
+  if [[ "$banmRFlag"x != "stopped"x ]]; then
+   	echo -e "\nBootanim is Not Stopped" >>$toolFile
+   	debuggerd -b $bootanimPid > $bootanimFile &
+	fi
+fi
+echo -e "step2.1 Bootanim info end - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+
+#3.get common log:
+echo -e "\nstep3 get common info begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+echo "step3 exec ps cmd">>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "\nVersion <=7 PS Cmd">>$toolFile
+   ps -t> $psFile &
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "\nVersion $verFlag PS -A Cmd">>$toolFile
+   ps -A -T > $psFile &
+else
+  echo -e "\nUnknown PS"
+fi
+
+# logcat:
+#echo "step3 logcat cmd">>$toolFile
+ #logcat -v threadtime >$logcatFile &
+#echo "step3 kmsg cmd">>$toolFile
+ #cat /proc/kmsg >$kmsgFile &
+
+#binder trans log:
+echo "step3 transaction_log cmd">>$toolFile
+ cat /sys/kernel/debug/binder/transaction_log > $transLogFile &
+echo "step3 transaction cmd">>$toolFile
+ cat /sys/kernel/debug/binder/transactions > $transFile &
+echo "step3 failed_transaction_log cmd">>$toolFile
+ cat /sys/kernel/debug/binder/failed_transaction_log > $transFailFile &
+
+#top:
+echo "step3 top cmd">>$toolFile
+ top -n 5 -d 1 >$topFile &
+
+# reboot check:
+bootFlag=` getprop sys.debug.fwc`
+echo "step3 getprop sys.debug.fwc begin" >>$toolFile
+#if [ "$bootFlag" == "1" ]; then
+  echo -e "======android reboot check======" >>$othersFile
+  echo -e "android reboot:$bootFlag" 2>&1|tee -a $othersFile
+  echo "Pulling Dropbox Files" >>$toolFile
+  getDropboxFiles
+#else
+  #echo -e "\nbootFlag is Null" 2>&1|tee -a $othersFile
+#fi
+echo "step3 getprop sys.debug.fwc end" >>$toolFile
+
+#adb pull /data/misc/hprofs $hproFolder 1>/dev/null &
+sleep 2
+
+#tombstones check:
+tsCnt=` ls $tombsDir |wc -l`
+echo -e "\nTombstones Cnt is = $tsCnt">>$toolFile
+echo "step3 pull tombstones begin">>$toolFile
+if [ "$tsCnt" -ne 0 ]; then
+  echo "Pulling Tombstones" >>$toolFile
+  chmod 777 $tombsDir/tomb* 2>&1|tee -a $toolFile &
+  cp $tombsDir $tombsFolder 2>&1|tee -a $toolFile &
+fi
+echo "step3 pull tombstones end" >>$toolFile
+echo "step3 get common info end - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+
+sleep 3
+
+#4.check key/touch driver ok?
+echo -e "\nstep4 check key/touch driver is ok begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo -e "Please In Order to Press Power key,Volume and Touch, Waitting...." 2>&1|tee -a $toolFile
+date >>$toolFile
+
+sleep 4
+#getevent > $gEventFile &
+#cat /proc/kmsg > $kInptFile &
+#logcat -v threadtime -s "InputReader" "InputDispatcher" "WindowManager"  > $fwInptFile &
+sleep 4
+echo -e "step4 check key/touch driver is ok end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+echo "\nstep4.1 sysrq-trigger begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo w > /proc/sysrq-trigger &
+execCmdTimeout
+sleep 2
+echo "step4.1 sysrq-trigger end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#5.check system_server state:
+echo -e "\nstep5 check system_server state begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+if [ -f "$traceFile" ]; then
+	mv $traceFile $preTraceFile
+	echo "step5 touch&chmod tracefile begin">>$toolFile
+	touch $traceFile
+	chmod 777 $traceFile 2>&1|tee -a $othersFile &
+	echo "step5 touch&chmod tracefile end" >>$toolFile
+fi
+sleep 1
+
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "Version <=7 PS |grep system_server">>$toolFile
+   systemSerPid=` ps |grep system_server | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep system_server">>$toolFile
+   systemSerPid=` ps -A|grep system_server | busybox awk '{print $2}'`
+else
+   echo -e "Unknown PS |grep system_server"
+fi
+echo -e "Systemserver Pid is $systemSerPid">>$toolFile
+if [ "$systemSerPid" ]; then
+  #get fd
+  echo "step5 pull system_server fds begin">>$toolFile
+  ls -l /proc/$systemSerPid/fd > $systemFdsFile
+  cat /proc/$systemSerPid/maps > $systemMapsFile
+  echo "Killing -3 Systemserver, Waitting...">>$toolFile
+  kill -3 $systemSerPid
+  echo "step5 pull system_server fds end">>$toolFile
+  sleep 3
+fi
+echo "step5 check system_server state end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#5.1 check systemui state:
+echo -e "\nstep5.1 check systemui state begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "Version <=7 PS |grep systemui">>$toolFile
+   systemuiPid=` ps |grep systemui | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep systemui">>$toolFile
+   systemuiPid=` ps -A|grep systemui | busybox awk '{print $2}'`
+else
+   echo -e "Unknown PS |grep systemui"
+fi
+echo -e "Systemui Pid is $systemuiPid">>$toolFile
+if [ "$systemuiPid" ]; then
+  echo "Killing -3 Systemui, Waitting...">>$toolFile
+  kill -3 $systemuiPid
+  sleep 2
+fi
+echo "step5.1 check systemui state end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#5.2 check launcher state:
+echo -e "\nstep5.2 check launcher state begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456 == *$substr* ]]; then
+   echo -e "Version <=7 PS |grep launcher">>$toolFile
+   launcherPid=` ps |grep launcher | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep launcher">>$toolFile
+   launcherPid=` ps -A|grep launcher | busybox awk '{print $2}'`
+else
+   echo -e "Unknown PS |grep launcher"
+fi
+echo -e "Launcher Pid is $launcherPid">>$toolFile
+if [ "$launcherPid" ]; then
+  echo "Killing -3 Launcher, Waitting...">>$toolFile
+  kill -3 $launcherPid
+  sleep 2
+fi
+echo "step5.2 check launcher state end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#5.3 catch monkey trace:
+echo -e "\nstep5.3 check monkey state begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+killMonkey
+echo "step5.3 check monkey state end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+sleep 2
+
+chmod 777 /data/anr/
+cp /data/anr/* $tracesFolder
+sleep 2
+
+#6.check surfaceflinger state:
+echo -e "\nstep6 check surfaceflinger state begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456  == *$substr* ]]; then
+   echo -e "Version <=7 PS |grep surfaceflinger">>$toolFile
+   sfPid=` ps |grep surfaceflinger | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep surfaceflinger">>$toolFile
+   sfPid=` ps -A|grep surfaceflinger | busybox awk '{print $2}'`
+else
+  echo -e "\nUnknown PS |grep surfaceflinger">>$toolFile
+fi
+echo -e "\nSurfaceFlinger Pid is $sfPid, Catching The Trace Info, Waitting..."
+debuggerd -b $sfPid > $sfTraceFile &
+echo "step6 dumpsys SurfaceFlinger cmd">>$toolFile
+ls -l /proc/$sfPid/fd > $surflgerFdsFile
+dumpsys SurfaceFlinger > $sFlingerFile &
+echo "step6 check surfaceflinger state end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#7.get "D/Z/T" process & trace:
+echo -e "\nstep7 get D/Z/T process & trace begin - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456  == *$substr* ]]; then
+   echo -e "7 Pro and trace begin">>$toolFile
+   ps -t| busybox awk '{if($8 == "D" || $8 == "Z" || $8 == "T" || $8 == "t") print $1,$2,$3,$8,$9}' > $stackFiles
+   dztProPids=` ps -t| busybox awk '{if($8 == "D" || $8 == "Z" || $8 == "T" || $8 == "t") print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "$verFlag Pro and trace begin">>$toolFile
+   ps -A | busybox awk '{if($8 == "D" || $8 == "Z" || $8 == "T" || $8 == "t") print $1,$2,$3,$8,$9}' > $stackFiles
+   dztProPids=` ps -A | busybox awk '{if($8 == "D" || $8 == "Z" || $8 == "T" || $8 == "t") print $2}'`
+else
+  echo -e "Unknown Pro and trace"
+fi
+
+for dztPid in $dztProPids
+do
+    echo "Catch Stack dztPid = $dztPid" >>$toolFile
+    cat /proc/$dztPid/stack > $stackFolder/kernelstack_$dztPid.txt &
+    debuggerd -b $dztPid > $stackFolder/nativestack_$dztPid.txt & 2>&1|tee -a $othersFile
+done
+echo "step7 get D/Z/T process & trace end - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+sleep 2
+
+#8.start activity & screencap:
+echo -e "\nstep8 start activity & screencap begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+backLightVal=` cat /sys/class/backlight/sprd_backlight/brightness`
+echo -e "\n======backlight check======" >>$othersFile
+echo -e "backlight level:$backLightVal" >>$othersFile
+if [ $backLightVal -eq 0 ];then
+ echo -e "\n======inject keyevent check======" >>$othersFile
+ echo "Sending keyevent 26" >>$othersFile
+ input keyevent 26 2>&1|tee -a $othersFile &
+ #echo $? >>$tmpLogFile
+ echo "Sending keyevent 26 end" >>$toolFile
+ sleep 1
+fi
+
+echo "step8 input swipe begin">>$toolFile
+input swipe 380 1100 380 290 2>&1|tee -a $toolFile &
+echo "step8 input swipe end">>$toolFile
+
+sleep 2
+
+echo "step8 start screencap begin">>$toolFile
+/system/bin/screencap -p > $scapBeforeFile &
+sleep 1
+echo -e "\n======activity switch check======" >>$othersFile
+echo "step8 start deskclock activity begin">>$toolFile
+am start -n com.android.deskclock/.DeskClock 2>&1|tee -a $othersFile &
+echo "step8 start deskclock activity end">>$toolFile
+
+sleep 2
+
+echo "step8 start screencap begin">>$toolFile
+/system/bin/screencap -p > $scapAfterFile &
+echo "step8 start screencap end">>$toolFile
+echo "step8 start activity & screencap end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#9. check assert:
+echo -e "\nstep9 check assert info begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo -e "\n=====modem assert check======" >>$othersFile
+echo -e "Assertinfo:">>$othersFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` - Assert = `Assert` " >>$othersFile
+echo "step9 check assert info end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#10.get memoryinfo:
+echo -e "\nstep10 get memoryinfo begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+memFree=` cat /proc/meminfo | grep MemFree | busybox awk '{print $2}'`
+cached=` cat /proc/meminfo | grep Cached | busybox awk 'NR==1{print $2}'`
+value=`echo $memFree $cached | busybox awk '{print $1+$2}'`
+
+let freeM=$value/1024
+echo -e "\nMemoryinfo :">>$memFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` - MemFree = ${value}KB = ${freeM}MB" >>$memFile
+echo " - `date '+%Y-%m-%d %H:%M:%S - '` - Free = $memFree+$cached KB" >>$memFile
+cat /proc/meminfo >>$memFile
+echo "step10 get memoryinfo end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+echo -e "\nstep10.1 emem_trigger begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo 0 > /proc/sys/vm/emem_trigger 1>>$toolFile 2>>$toolFile
+echo "step10.1 emem_trigger end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+#11.get each partition size:
+echo -e "\nstep11 get each partition size begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo -e "\nEach Partition Size info :" >>$dfFile
+df -h >>$dfFile &
+echo "step11 get each partition size end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+sleep 1
+
+#12.dump window :
+echo -e "\nstep12 dump window&activitys info begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+dumpsys window >>$dumpWindFile &
+echo $? >>$dumpWindFile
+dumpsys activity activities >>$dumpActivitysFile &
+echo "step12 dump window&activitys info end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+sleep 5
+
+#13.bugreport:
+#Exec bugreport cmd, Waitting...
+#=============================================================================
+#WARNING: flat bugreports are deprecated, use bugreport <zip_file> instead [[ -n "$bugrpt" ]] && || echo $?(cmd return value)
+#=============================================================================
+# bugreport >$bugReptFile
+bugrptCnt=`getprop persist.sys.bugrpt.flag |wc -l`
+echo "\nstep13 bugrptCnt is $bugrptCnt " >>$toolFile
+if [ "$bugrptCnt" -ne 0 ]; then
+	echo " - `date '+%Y-%m-%d %H:%M:%S - '` [sys.bugrpt.flag]=` getprop persist.sys.bugrpt.flag`" >>$toolFile
+	bugrpt=` getprop persist.sys.bugrpt.flag`
+	if [ "$bugrpt" == "0" ]; then
+		echo -e "step13 exec bugreport begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+		echo -e "Exec bugreport cmd, Waitting..."
+		if [[ $verFlag == *$ver7* ]] || [[ $ver456  == *$substr* ]]; then
+   			echo -e "Version 7 bugreport">>$toolFile
+   			bugreport $bugReportFile
+		elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   			echo -e "Version $verFlag bugreport">>$toolFile
+   			bugreport >>$bugReportFile
+		else
+   			echo -e "Unknown bugreport"
+		fi
+		echo "step13 exec bugreport end - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+	fi
+fi
+sleep 1
+
+#kill proc:getevent :
+echo "\nstep4 getEvent pid begin- `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+if [[ $verFlag == *$ver7* ]] || [[ $ver456  == *$substr* ]]; then
+   echo -e "Version 7 PS |grep getevent">>$toolFile
+   getEventPid=` ps |grep getevent | busybox awk '{print $2}'`
+elif [[ $verFlag == *$ver8* ]] || [[ $verFlag == *$ver9* ]] || [[ $verFlag == *$ver10* ]]; then
+   echo -e "Version $verFlag PS -A |grep getevent">>$toolFile
+   getEventPid=` ps -A|grep getevent | busybox awk '{print $2}'`
+else
+  echo -e "Unknown PSCmd"
+fi
+echo "getEventPid is $getEventPid" >>$toolFile
+for pid in $getEventPid
+do
+    echo "Kill Process getevent Pid = $pid" >>$toolFile
+    kill -9 $pid &
+    sleep 1
+done
+echo "step4 getEvent pid end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+sleep 2
+
+echo "\nstep14 sysrq-trigger begin - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+echo w > /proc/sysrq-trigger &
+execCmdTimeout
+sleep 2
+echo "step14 sysrq-trigger end - `date '+%Y-%m-%d %H:%M:%S - '` ">>$toolFile
+
+sleep 15
+echo "\nLog Catch Script End Time - `date '+%Y-%m-%d %H:%M:%S - '` " >>$toolFile
+exit 0
